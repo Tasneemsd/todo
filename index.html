@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Weekly Planner</title>
   <link rel="icon" href="images/weekly-planner.png" type="image/png" />
+  <title>Weekly Planner</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
   <style>
@@ -106,54 +106,73 @@
   <button class="toggle-btn" id="toggleSidebar">☰</button>
   <div class="sidebar" id="sidebar">
     <h4><i class="fas fa-calendar-check me-2"></i>Planner</h4>
-    <ul id="dayLinks"></ul>
-    <div class="text-center mt-4">
-      <button class="btn btn-sm btn-light me-2" onclick="changeWeek(-1)">⏮️ Prev</button>
-      <button class="btn btn-sm btn-light" onclick="changeWeek(1)">⏭️ Next</button>
+    <ul id="dayList"></ul>
+    <div class="text-center mt-3">
+      <button class="btn btn-sm btn-light" onclick="changeWeek(-1)">⏪ Prev</button>
+      <button class="btn btn-sm btn-light" onclick="changeWeek(1)">Next ⏩</button>
     </div>
   </div>
   <div class="main">
-    <div id="weekContainer"></div>
+    <h2 id="weekRange" class="text-center text-white mb-4"></h2>
+    <div id="plannerCards"></div>
   </div>
-  <audio id="soundEffect" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
+  <audio id="sound" src="https://www.soundjay.com/buttons/sounds/button-29.mp3"></audio>
   <script>
-    let currentWeekOffset = 0;
-    let cardCount = 0;
-    const weekContainer = document.getElementById('weekContainer');
+    let currentDate = new Date();
+    const sound = document.getElementById("sound");
+    const storageKey = "weekly-planner";
 
     document.addEventListener("DOMContentLoaded", () => {
       renderWeek();
       handleSidebarVisibility();
     });
 
-    function changeWeek(offset) {
-      currentWeekOffset += offset;
-      weekContainer.innerHTML = '';
-      document.getElementById('dayLinks').innerHTML = '';
-      renderWeek();
+    const toggleBtn = document.getElementById("toggleSidebar");
+    const sidebar = document.getElementById("sidebar");
+    toggleBtn.addEventListener("click", () => sidebar.classList.toggle("show"));
+    window.addEventListener("resize", handleSidebarVisibility);
+
+    function handleSidebarVisibility() {
+      window.innerWidth >= 769 ? sidebar.classList.add("show") : sidebar.classList.remove("show");
+    }
+
+    function getWeekDates(baseDate) {
+      const dates = [];
+      const start = new Date(baseDate);
+      start.setDate(start.getDate() - start.getDay());
+      for (let i = 1; i <= 7; i++) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        dates.push(d);
+      }
+      return dates;
     }
 
     function renderWeek() {
-      const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-      const today = new Date();
-      const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - today.getDay() + (currentWeekOffset * 7));
+      const weekDates = getWeekDates(currentDate);
+      const dayList = document.getElementById("dayList");
+      const planner = document.getElementById("plannerCards");
+      const weekRange = document.getElementById("weekRange");
+      dayList.innerHTML = "";
+      planner.innerHTML = "";
 
-      for (let i = 0; i < 7; i++) {
-        const date = new Date(startOfWeek);
-        date.setDate(startOfWeek.getDate() + i);
-        const id = days[i].toLowerCase();
-        const formattedDate = `${days[i]} – ${date.toDateString()}`;
-        createDayCard(id, formattedDate);
-        createSidebarLink(id, formattedDate);
-      }
-    }
+      const startStr = weekDates[0].toLocaleDateString();
+      const endStr = weekDates[6].toLocaleDateString();
+      weekRange.textContent = `Week: ${startStr} - ${endStr}`;
 
-    function createDayCard(id, title) {
-      const cardId = `card-${cardCount++}`;
-      const cardHTML = `
-        <div class="card" id="${id}">
-          <h5 class="text-center mb-3 text-white">${title}</h5>
+      weekDates.forEach((date, idx) => {
+        const id = date.toISOString().split("T")[0];
+        const dayName = date.toLocaleDateString(undefined, { weekday: "long" });
+        const listItem = document.createElement("li");
+        listItem.innerHTML = `📅 ${dayName}`;
+        listItem.onclick = () => document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        dayList.appendChild(listItem);
+
+        const card = document.createElement("div");
+        card.className = "card p-3 mb-4 shadow-sm";
+        card.id = id;
+        card.innerHTML = `
+          <h5 class="text-center mb-3 text-white"><i class="fas fa-calendar-day text-warning me-2"></i>${dayName} (${id})</h5>
           <div class="input-group mb-2">
             <span class="input-group-text"><i class="fas fa-pen"></i></span>
             <input type="text" class="form-control task-input" placeholder="Your task...">
@@ -167,7 +186,7 @@
               <option value="Personal">👤 Personal</option>
               <option value="Urgent">⚠️ Urgent</option>
             </select>
-            <button class="btn btn-custom" onclick="addTask('${cardId}')"><i class="fas fa-plus"></i></button>
+            <button class="btn btn-custom" onclick="addTask('${id}')"><i class="fas fa-plus"></i></button>
           </div>
           <ul class="list-group task-list"></ul>
           <div class="progress-container">
@@ -176,26 +195,24 @@
               <div class="progress-bar bg-success" role="progressbar" style="width: 0%">0%</div>
             </div>
           </div>
-        </div>
-      `;
-      weekContainer.insertAdjacentHTML("beforeend", cardHTML);
+        `;
+        planner.appendChild(card);
+        loadTasks(id);
+        updateProgress(document.getElementById(id));
+      });
     }
 
-    function createSidebarLink(id, title) {
-      const dayLinks = document.getElementById('dayLinks');
-      const li = document.createElement('li');
-      li.textContent = title;
-      li.onclick = () => scrollToDay(id);
-      dayLinks.appendChild(li);
+    function changeWeek(offset) {
+      currentDate.setDate(currentDate.getDate() + offset * 7);
+      renderWeek();
     }
 
-    function addTask(cardId) {
-      const card = document.getElementById(cardId);
+    function addTask(dayId) {
+      const card = document.getElementById(dayId);
       const taskInput = card.querySelector('.task-input');
       const dueDate = card.querySelector('.due-date');
       const category = card.querySelector('.category-select');
       const taskList = card.querySelector('.task-list');
-      const sound = document.getElementById('soundEffect');
 
       const text = taskInput.value.trim();
       const due = dueDate.value;
@@ -211,14 +228,15 @@
           </span>
           <div>
             <button class="btn btn-sm btn-outline-success me-1" onclick="toggleComplete(this.parentElement.parentElement)"><i class="fas fa-check"></i></button>
-            <button class="btn btn-sm btn-outline-danger" onclick="deleteTask(this.parentElement.parentElement)"><i class="fas fa-trash"></i></button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteTask(this.parentElement.parentElement, '${dayId}')"><i class="fas fa-trash"></i></button>
           </div>
         `;
         taskList.appendChild(li);
+        saveTask(dayId);
         taskInput.value = '';
         dueDate.value = '';
-        sound.play();
         updateProgress(card);
+        sound.play();
       }
     }
 
@@ -226,12 +244,14 @@
       taskElement.classList.toggle("completed");
       const card = taskElement.closest('.card');
       updateProgress(card);
+      saveTask(card.id);
     }
 
-    function deleteTask(taskElement) {
+    function deleteTask(taskElement, dayId) {
       const card = taskElement.closest('.card');
       taskElement.remove();
       updateProgress(card);
+      saveTask(dayId);
     }
 
     function updateProgress(card) {
@@ -243,22 +263,40 @@
       progressBar.textContent = `${percent}%`;
     }
 
-    const toggleBtn = document.getElementById('toggleSidebar');
-    const sidebar = document.getElementById('sidebar');
-    toggleBtn.addEventListener('click', () => sidebar.classList.toggle('show'));
-
-    function handleSidebarVisibility() {
-      if (window.innerWidth >= 769) {
-        sidebar.classList.add('show');
-      } else {
-        sidebar.classList.remove('show');
-      }
+    function saveTask(dayId) {
+      const card = document.getElementById(dayId);
+      const taskList = card.querySelectorAll(".task");
+      const data = Array.from(taskList).map(task => {
+        const span = task.querySelector("span");
+        return {
+          html: span.innerHTML,
+          completed: task.classList.contains("completed")
+        };
+      });
+      const all = JSON.parse(localStorage.getItem(storageKey) || '{}');
+      all[dayId] = data;
+      localStorage.setItem(storageKey, JSON.stringify(all));
     }
 
-    window.addEventListener('resize', handleSidebarVisibility);
-    function scrollToDay(dayId) {
-      const target = document.getElementById(dayId);
-      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    function loadTasks(dayId) {
+      const all = JSON.parse(localStorage.getItem(storageKey) || '{}');
+      const card = document.getElementById(dayId);
+      const taskList = card.querySelector(".task-list");
+      taskList.innerHTML = "";
+      if (all[dayId]) {
+        all[dayId].forEach(task => {
+          const li = document.createElement("li");
+          li.className = `list-group-item task d-flex justify-content-between align-items-start ${task.completed ? 'completed' : ''}`;
+          li.innerHTML = `
+            <span onclick="toggleComplete(this)">${task.html}</span>
+            <div>
+              <button class="btn btn-sm btn-outline-success me-1" onclick="toggleComplete(this.parentElement.parentElement)"><i class="fas fa-check"></i></button>
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteTask(this.parentElement.parentElement, '${dayId}')"><i class="fas fa-trash"></i></button>
+            </div>
+          `;
+          taskList.appendChild(li);
+        });
+      }
     }
   </script>
 </body>
