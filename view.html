@@ -1,111 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Task Status</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>Weekly Planner - View Tasks</title>
   <style>
-    body {
-      background: linear-gradient(to bottom, #009FFF, #ec2F4B);
-      color: white;
-      font-family: sans-serif;
-      text-align: center;
-      padding: 20px;
-    }
-    .status-container {
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    .day-block {
-      background-color: rgba(0, 0, 0, 0.2);
-      padding: 15px;
-      margin: 15px 0;
-      border-radius: 15px;
-    }
-    .day-block h3 {
-      margin-bottom: 10px;
-    }
-    .task {
-      display: flex;
-      justify-content: space-between;
-      padding: 5px 0;
-    }
-    .progress-bar {
-      background-color: #444;
-      border-radius: 10px;
-      overflow: hidden;
-      height: 10px;
-      margin-top: 5px;
-    }
-    .progress-fill {
-      height: 100%;
-      background-color: #00FFCC;
-    }
-    .nav-buttons {
-      margin: 20px 0;
-    }
-    .nav-buttons a {
-      display: inline-block;
-      background: #ffffff;
-      color: #000000;
-      padding: 10px 20px;
-      margin: 5px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: bold;
-      transition: background 0.3s;
-    }
-    .nav-buttons a:hover {
-      background: #dddddd;
-    }
+    body { font-family: Arial; padding: 20px; background-color: #f0f8ff; }
+    .day-section { margin-bottom: 20px; padding: 10px; background: #fff; border-radius: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+    .task { margin-left: 15px; padding: 5px; border-left: 3px solid #007bff; }
   </style>
 </head>
 <body>
-  <h1>Task Status Overview</h1>
 
-  <div class="nav-buttons">
-    <a href="index.html">⬅ Back to Planner</a>
-    <a href="index.html#addTask">➕ Add New Task</a>
-  </div>
-
-  <div class="status-container" id="statusContainer"></div>
+  <h1>📋 Weekly Planner - Task Status</h1>
+  <div id="taskContainer"></div>
 
   <script>
-    const statusContainer = document.getElementById('statusContainer');
-    const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+    // Fetch data from localStorage
+    const plannerData = JSON.parse(localStorage.getItem("weekly-planner"));
+    const container = document.getElementById("taskContainer");
 
-    const grouped = {};
+    if (!plannerData) {
+      container.innerHTML = "<p>No tasks found in localStorage.</p>";
+    } else {
+      // Loop through each date
+      Object.keys(plannerData).forEach(date => {
+        const tasks = plannerData[date];
 
-    tasks.forEach(task => {
-      const day = task.day || "Unknown Day";
-      if (!grouped[day]) grouped[day] = [];
-      grouped[day].push(task);
-    });
+        // Create a section for the day
+        const section = document.createElement("div");
+        section.className = "day-section";
 
-    for (const day in grouped) {
-      const dayTasks = grouped[day];
-      const completed = dayTasks.filter(t => t.completed).length;
-      const percent = Math.round((completed / dayTasks.length) * 100);
+        // Header for the date
+        const heading = document.createElement("h3");
+        heading.textContent = `📅 ${date}`;
+        section.appendChild(heading);
 
-      const block = document.createElement('div');
-      block.className = 'day-block';
+        // List all tasks for that date
+        tasks.forEach(task => {
+          const taskDiv = document.createElement("div");
+          taskDiv.className = "task";
+          taskDiv.innerHTML = `${task.html} <strong>[${task.completed ? "✔️ Done" : "❌ Pending"}]</strong>`;
+          section.appendChild(taskDiv);
+        });
 
-      block.innerHTML = `
-        <h3>${day}</h3>
-        ${dayTasks.map(t => `
-          <div class="task">
-            <span>${t.text}</span>
-            <span>${t.completed ? '✅' : '❌'}</span>
-          </div>
-        `).join('')}
-        <div class="progress-bar">
-          <div class="progress-fill" style="width: ${percent}%"></div>
-        </div>
-        <p>${percent}% completed</p>
-      `;
-
-      statusContainer.appendChild(block);
+        container.appendChild(section);
+      });
     }
   </script>
+
 </body>
 </html>
