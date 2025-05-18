@@ -15,31 +15,30 @@
   <div id="taskContainer"></div>
 
   <script>
-    // Fetch data from localStorage
     const plannerData = JSON.parse(localStorage.getItem("weekly-planner"));
     const container = document.getElementById("taskContainer");
 
     if (!plannerData) {
       container.innerHTML = "<p>No tasks found in localStorage.</p>";
     } else {
-      // Loop through each date
       Object.keys(plannerData).forEach(date => {
         const tasks = plannerData[date];
 
-        // Create a section for the day
         const section = document.createElement("div");
         section.className = "day-section";
 
-        // Header for the date
         const heading = document.createElement("h3");
         heading.textContent = `📅 ${date}`;
         section.appendChild(heading);
 
-        // List all tasks for that date
         tasks.forEach(task => {
           const taskDiv = document.createElement("div");
           taskDiv.className = "task";
-          taskDiv.innerHTML = `${task.html} <strong>[${task.completed ? "✔️ Done" : "❌ Pending"}]</strong>`;
+          taskDiv.innerHTML = `
+            <strong>${task.text}</strong><br>
+            <small><i class="far fa-calendar-alt"></i> ${task.due || '—'} | 
+            <i class="fas fa-tags"></i> ${task.category || 'General'}</small> 
+            <strong>[${task.completed ? "✔️ Done" : "❌ Pending"}]</strong>`;
           section.appendChild(taskDiv);
         });
 
