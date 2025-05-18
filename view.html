@@ -1,3 +1,4 @@
+<!-- Save as view.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,55 +11,33 @@
   </style>
 </head>
 <body>
-
   <h1>📋 Weekly Planner - Task Status</h1>
   <div id="taskContainer"></div>
 
   <script>
-    function getWeekDates(baseDate = new Date()) {
-      const start = new Date(baseDate);
-      start.setDate(start.getDate() - start.getDay() + 1); // Start from Monday
-      const dates = [];
-      for (let i = 0; i < 7; i++) {
-        const d = new Date(start);
-        d.setDate(start.getDate() + i);
-        dates.push(d);
-      }
-      return dates;
-    }
-
-    function formatDate(date) {
-      return date.toISOString().split("T")[0]; // yyyy-mm-dd
-    }
-
     const plannerData = JSON.parse(localStorage.getItem("weekly-planner"));
     const container = document.getElementById("taskContainer");
 
-    if (!plannerData) {
+    if (!plannerData || Object.keys(plannerData).length === 0) {
       container.innerHTML = "<p>No tasks found in localStorage.</p>";
     } else {
-      const weekDates = getWeekDates();
-      weekDates.forEach(date => {
-        const dateKey = formatDate(date);
-        const tasks = plannerData[dateKey];
-        if (!tasks) return;
-
+      Object.keys(plannerData).sort().forEach(date => {
+        const tasks = plannerData[date];
         const section = document.createElement("div");
         section.className = "day-section";
 
         const heading = document.createElement("h3");
-        const dayName = date.toLocaleDateString(undefined, { weekday: "long" });
-        heading.textContent = `📅 ${dayName} (${dateKey})`;
+        heading.textContent = `📅 ${date}`;
         section.appendChild(heading);
 
         tasks.forEach(task => {
           const taskDiv = document.createElement("div");
           taskDiv.className = "task";
           taskDiv.innerHTML = `
-            <strong>${task.text || "Untitled Task"}</strong><br>
+            <strong>${task.text}</strong><br>
             <small><i class="far fa-calendar-alt"></i> ${task.due || '—'} | 
-            <i class="fas fa-tags"></i> ${task.category || 'General'}</small> 
-            <strong>[${task.completed ? "✔️ Done" : "❌ Pending"}]</strong>`;
+            <i class="fas fa-tags"></i> ${task.category || 'General'} 
+            — ${task.completed ? "✔️ Done" : "❌ Pending"}</small>`;
           section.appendChild(taskDiv);
         });
 
@@ -66,6 +45,5 @@
       });
     }
   </script>
-
 </body>
 </html>

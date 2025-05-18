@@ -1,3 +1,4 @@
+<!-- Save as index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -117,6 +118,9 @@
     <div id="plannerCards"></div>
   </div>
   <audio id="sound" src="https://www.soundjay.com/buttons/sounds/button-29.mp3"></audio>
+
+  <a href="view.html" style="position: fixed; top: 20px; right: 20px; background: #fff; color: #000; padding: 8px 12px; border-radius: 8px;">View Task Status</a>
+
   <script>
     let currentDate = new Date();
     const sound = document.getElementById("sound");
@@ -139,8 +143,7 @@
     function getWeekDates(baseDate) {
       const dates = [];
       const start = new Date(baseDate);
-      start.setDate(start.getDate() - start.getDay() + 1); // Start on Monday
-
+      start.setDate(start.getDate() - start.getDay() + 1);
       for (let i = 0; i < 7; i++) {
         const d = new Date(start);
         d.setDate(start.getDate() + i);
@@ -161,7 +164,7 @@
       const endStr = weekDates[6].toLocaleDateString();
       weekRange.textContent = `Week: ${startStr} - ${endStr}`;
 
-      weekDates.forEach((date, idx) => {
+      weekDates.forEach((date) => {
         const id = date.toISOString().split("T")[0];
         const dayName = date.toLocaleDateString(undefined, { weekday: "long" });
         const listItem = document.createElement("li");
@@ -199,7 +202,7 @@
         `;
         planner.appendChild(card);
         loadTasks(id);
-        updateProgress(document.getElementById(id));
+        updateProgress(card);
       });
     }
 
@@ -220,18 +223,8 @@
       const cat = category.value;
 
       if (text) {
-        const li = document.createElement("li");
-        li.className = "list-group-item task d-flex justify-content-between align-items-start";
-        li.innerHTML = `
-          <span onclick="toggleComplete(this)">
-            <i class="fas fa-thumbtack text-primary me-2"></i>${text}<br>
-            <small class="text-muted"><i class="far fa-calendar-alt"></i> ${due || '—'} | <i class="fas fa-tags"></i> ${cat}</small>
-          </span>
-          <div>
-            <button class="btn btn-sm btn-outline-success me-1" onclick="toggleComplete(this.parentElement.parentElement)"><i class="fas fa-check"></i></button>
-            <button class="btn btn-sm btn-outline-danger" onclick="deleteTask(this.parentElement.parentElement, '${dayId}')"><i class="fas fa-trash"></i></button>
-          </div>
-        `;
+        const taskObj = { text, due, category: cat, completed: false };
+        const li = createTaskElement(taskObj, dayId);
         taskList.appendChild(li);
         saveTask(dayId);
         taskInput.value = '';
@@ -241,9 +234,26 @@
       }
     }
 
-    function toggleComplete(taskElement) {
-      taskElement.classList.toggle("completed");
-      const card = taskElement.closest('.card');
+    function createTaskElement(task, dayId) {
+      const li = document.createElement("li");
+      li.className = `list-group-item task d-flex justify-content-between align-items-start ${task.completed ? 'completed' : ''}`;
+      li.innerHTML = `
+        <span onclick="toggleComplete(this)">
+          <i class="fas fa-thumbtack text-primary me-2"></i>${task.text}<br>
+          <small class="text-muted"><i class="far fa-calendar-alt"></i> ${task.due || '—'} | <i class="fas fa-tags"></i> ${task.category}</small>
+        </span>
+        <div>
+          <button class="btn btn-sm btn-outline-success me-1" onclick="toggleComplete(this.parentElement.parentElement)"><i class="fas fa-check"></i></button>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteTask(this.parentElement.parentElement, '${dayId}')"><i class="fas fa-trash"></i></button>
+        </div>
+      `;
+      return li;
+    }
+
+    function toggleComplete(element) {
+      const task = element.closest(".task");
+      task.classList.toggle("completed");
+      const card = task.closest(".card");
       updateProgress(card);
       saveTask(card.id);
     }
@@ -268,9 +278,14 @@
       const card = document.getElementById(dayId);
       const taskList = card.querySelectorAll(".task");
       const data = Array.from(taskList).map(task => {
-        const span = task.querySelector("span");
+        const text = task.querySelector("span").innerText.split('\n')[0].replace("📌", "").trim();
+        const meta = task.querySelector("small").innerText;
+        const due = meta.split("|")[0].replace(/[^0-9\-: T]/g, '').trim();
+        const category = meta.split("|")[1]?.trim().split(" ").slice(1).join(" ") || "General";
         return {
-          html: span.innerHTML,
+          text,
+          due,
+          category,
           completed: task.classList.contains("completed")
         };
       });
@@ -286,22 +301,11 @@
       taskList.innerHTML = "";
       if (all[dayId]) {
         all[dayId].forEach(task => {
-          const li = document.createElement("li");
-          li.className = `list-group-item task d-flex justify-content-between align-items-start ${task.completed ? 'completed' : ''}`;
-          li.innerHTML = `
-            <span onclick="toggleComplete(this)">${task.html}</span>
-            <div>
-              <button class="btn btn-sm btn-outline-success me-1" onclick="toggleComplete(this.parentElement.parentElement)"><i class="fas fa-check"></i></button>
-              <button class="btn btn-sm btn-outline-danger" onclick="deleteTask(this.parentElement.parentElement, '${dayId}')"><i class="fas fa-trash"></i></button>
-            </div>
-          `;
+          const li = createTaskElement(task, dayId);
           taskList.appendChild(li);
         });
       }
     }
   </script>
-
-  <a href="view.html" style="position: fixed; top: 20px; right: 20px; background: #fff; color: #000; padding: 8px 12px; border-radius: 8px;">View Task Status</a>
-
 </body>
 </html>
