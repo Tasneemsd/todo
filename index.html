@@ -139,8 +139,9 @@
     function getWeekDates(baseDate) {
       const dates = [];
       const start = new Date(baseDate);
-      start.setDate(start.getDate() - start.getDay());
-      for (let i = 1; i <= 7; i++) {
+      start.setDate(start.getDate() - start.getDay() + 1); // Start on Monday
+
+      for (let i = 0; i < 7; i++) {
         const d = new Date(start);
         d.setDate(start.getDate() + i);
         dates.push(d);
@@ -299,7 +300,7 @@
       }
     }
   </script>
-  
+
   <a href="view.html" style="position: fixed; top: 20px; right: 20px; background: #fff; color: #000; padding: 8px 12px; border-radius: 8px;">View Task Status</a>
 
 </body>

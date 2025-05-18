@@ -15,27 +15,47 @@
   <div id="taskContainer"></div>
 
   <script>
+    function getWeekDates(baseDate = new Date()) {
+      const start = new Date(baseDate);
+      start.setDate(start.getDate() - start.getDay() + 1); // Start from Monday
+      const dates = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        dates.push(d);
+      }
+      return dates;
+    }
+
+    function formatDate(date) {
+      return date.toISOString().split("T")[0]; // yyyy-mm-dd
+    }
+
     const plannerData = JSON.parse(localStorage.getItem("weekly-planner"));
     const container = document.getElementById("taskContainer");
 
     if (!plannerData) {
       container.innerHTML = "<p>No tasks found in localStorage.</p>";
     } else {
-      Object.keys(plannerData).forEach(date => {
-        const tasks = plannerData[date];
+      const weekDates = getWeekDates();
+      weekDates.forEach(date => {
+        const dateKey = formatDate(date);
+        const tasks = plannerData[dateKey];
+        if (!tasks) return;
 
         const section = document.createElement("div");
         section.className = "day-section";
 
         const heading = document.createElement("h3");
-        heading.textContent = `📅 ${date}`;
+        const dayName = date.toLocaleDateString(undefined, { weekday: "long" });
+        heading.textContent = `📅 ${dayName} (${dateKey})`;
         section.appendChild(heading);
 
         tasks.forEach(task => {
           const taskDiv = document.createElement("div");
           taskDiv.className = "task";
           taskDiv.innerHTML = `
-            <strong>${task.text}</strong><br>
+            <strong>${task.text || "Untitled Task"}</strong><br>
             <small><i class="far fa-calendar-alt"></i> ${task.due || '—'} | 
             <i class="fas fa-tags"></i> ${task.category || 'General'}</small> 
             <strong>[${task.completed ? "✔️ Done" : "❌ Pending"}]</strong>`;
